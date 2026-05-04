@@ -1,4 +1,5 @@
 
+
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../App';
 import { TipoDocumento, Solicitud } from '../types';
@@ -8,6 +9,18 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../constants';
 import { FaPaperPlane, FaCopy } from 'react-icons/fa';
 
+const getClientIP = async (): Promise<string> => {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        if (!response.ok) return '192.168.1.1';
+        const data = await response.json();
+        return data.ip || '192.168.1.1';
+    } catch (error) {
+        console.error('Error getting client IP:', error);
+        return '192.168.1.1';
+    }
+};
+
 const mapTipoDocumentoToApiCode = (tipo: TipoDocumento): string => {
   switch (tipo) {
     case TipoDocumento.CEDULA_CIUDADANIA: return 'CC';
@@ -15,6 +28,54 @@ const mapTipoDocumentoToApiCode = (tipo: TipoDocumento): string => {
     case TipoDocumento.CEDULA_EXTRANJERIA: return 'CE';
     default: return 'CC';
   }
+};
+
+const sendEmailNotification = async (payload: object) => {
+    const endpoint = 'https://segurobolivar-trial.app.n8n.cloud/webhook-test/c8b708cb-c698-4403-80cc-e41c8489ab41';
+    
+    // 1) Standard fetch
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (response.ok) {
+            console.log('Email notification sent via standard fetch.');
+            return;
+        }
+        console.warn('Standard fetch for email failed with status:', response.status);
+    } catch (error) {
+        console.warn('Standard fetch for email failed, falling back...', error);
+    }
+
+    // 2) navigator.sendBeacon
+    try {
+        if (navigator.sendBeacon) {
+            const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain' });
+            if (navigator.sendBeacon(endpoint, blob)) {
+                console.log('Email notification sent via sendBeacon.');
+                return;
+            }
+        }
+    } catch (error) {
+        console.warn('sendBeacon for email failed, falling back...', error);
+    }
+
+    // 3) fetch with no-cors (last resort)
+    try {
+        await fetch(endpoint, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'text/plain',
+            },
+            body: JSON.stringify(payload),
+        });
+        console.log('Email notification sent via no-cors fetch (fire and forget).');
+    } catch (error) {
+        console.error('All methods to send email notification failed.', error);
+    }
 };
 
 const SendRequestPage: React.FC = () => {
@@ -70,38 +131,36 @@ const SendRequestPage: React.FC = () => {
       setIsLoading(false);
       return;
     }
-
-    let sanitizedDoc: string;
-    if (tipoDocumento === TipoDocumento.CEDULA_CIUDADANIA) {
-        sanitizedDoc = numeroDocumento.replace(/[^\d]/g, '');
-    } else {
-        sanitizedDoc = numeroDocumento.replace(/[^a-zA-Z0-9]/g, '');
-    }
     
     try {
-      const response = await fetch(`https://2ncqe7ikzh.execute-api.us-east-1.amazonaws.com/stage/biometry/v1/start-validation`,  {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': 'b5EW1Ilf215yPfRk86dzI3PM77x01AU49TppJ83R',
-        }, 
-        body: JSON.stringify({
-          userData: {
-            userId: sanitizedDoc,
-            userType: mapTipoDocumentoToApiCode(tipoDocumento),
-          }
-        }),
+      const clientIP = await getClientIP();
+      const params = new URLSearchParams({
+          d: numeroDocumento.replace(/[^\da-zA-Z]/g, ''),
+          tc: mapTipoDocumentoToApiCode(tipoDocumento),
+          ip: clientIP,
+          cs: numeroCelular,
+      });
+
+      const response = await fetch(`https://2ncqe7ikzh.execute-api.us-east-1.amazonaws.com/stage/biometry/v1/start-validation?${params.toString()}`,  {
+          method: 'POST',
+          headers: {
+              'x-api-key': 'BLX4v9u8SZ5ypiyL9ZPpV8qWPAWppXP73qvXq61l',
+          }, 
       });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        const errorMessage = errorData?.message || `Error en la solicitud: ${response.status} ${response.statusText}`;
+        let errorMessage = `Error en la solicitud: ${response.status} ${response.statusText}`;
+        if (errorData && errorData.message) {
+          errorMessage = typeof errorData.message === 'object' ? JSON.stringify(errorData.message) : errorData.message;
+        }
         throw new Error(errorMessage);
       }
+
       const data = await response.json();
       if (!data.url || !data.idValidation) {
         console.error('Biometrics API response was invalid:', data);
-        throw new Error("La respuesta del servicio de biometría es inválida.");
+        throw new Error("La respuesta del servicio de biometría es inválida o no contiene 'url' o 'idValidation'.");
       }
   
       const newConsecutiveId = appContext.addRequest({
@@ -114,6 +173,15 @@ const SendRequestPage: React.FC = () => {
       });
       
       appContext.consumeTransactions();
+
+      const emailPayload = {
+          email: correoElectronico,
+          link: data.url,
+          id_solicitud: newConsecutiveId,
+          nombre_inmobiliaria: appContext.user.nombreInmobiliaria,
+          tipo_proceso: 'Validación de Identidad'
+      };
+      sendEmailNotification(emailPayload);
       
       setGeneratedRequestId(newConsecutiveId);
       setBiometricsUrl(data.url);

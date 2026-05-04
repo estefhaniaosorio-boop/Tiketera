@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppContextType, User, Solicitud, EstadoSolicitud, Contrato, Signer, EstadoContrato, Firma, Credential, CupoData, TransaccionDetallada, TipoEnvio, TipoDocumento } from './types';
@@ -17,7 +18,7 @@ import Sidebar from './components/Sidebar';
 
 export const AppContext = React.createContext<AppContextType | null>(null);
 
-const BIOMETRY_API_KEY = 'b5EW1Ilf215yPfRk86dzI3PM77x01AU49TppJ83R';
+const BIOMETRY_API_KEY = 'BLX4v9u8SZ5ypiyL9ZPpV8qWPAWppXP73qvXq61l';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const appContext = React.useContext(AppContext);
@@ -305,15 +306,16 @@ const App: React.FC = () => {
   
   const updateRequestStatus = useCallback((id: string, newStatus: EstadoSolicitud): void => {
     setRequests(prevReqs => prevReqs.map(req => {
-      if (req.id === id) {
-        const newFechaEnvio = new Date().toISOString();
-        let updatedReq = { ...req, estado: newStatus, fechaEnvio: newFechaEnvio };
+      if (req.id === id && req.estado !== newStatus) {
+        // For resending a VENCIDO request, update send date and expiration
         if (req.estado === EstadoSolicitud.VENCIDO && newStatus === EstadoSolicitud.PENDIENTE) {
+          const newFechaEnvio = new Date().toISOString();
           const vencimiento = new Date(newFechaEnvio);
           vencimiento.setDate(vencimiento.getDate() + 5);
-          updatedReq.fechaVencimientoLink = vencimiento.toISOString();
-        } 
-        return updatedReq;
+          return { ...req, estado: newStatus, fechaEnvio: newFechaEnvio, fechaVencimientoLink: vencimiento.toISOString() };
+        }
+        // For all other status transitions (e.g., PENDING -> SUCCESS), just update the status
+        return { ...req, estado: newStatus };
       }
       return req;
     }));
@@ -350,6 +352,50 @@ const App: React.FC = () => {
     }));
   }, []);
 
+  useEffect(() => {
+    const checkRequestStatuses = async () => {
+      const pendingRequests = requests.filter(
+        r => r.estado === EstadoSolicitud.PENDIENTE && r.idValidation
+      );
+
+      if (pendingRequests.length === 0) return;
+
+      for (const request of pendingRequests) {
+        if (request.fechaVencimientoLink && new Date() > new Date(request.fechaVencimientoLink)) {
+          if (request.estado !== EstadoSolicitud.VENCIDO) {
+            updateRequestStatus(request.id, EstadoSolicitud.VENCIDO);
+          }
+          continue;
+        }
+
+        try {
+          const response = await fetch(`https://2ncqe7ikzh.execute-api.us-east-1.amazonaws.com/stage/biometry/v1/status?idValidation=${request.idValidation}`, {
+            headers: { 'x-api-key': BIOMETRY_API_KEY }
+          });
+
+          if (!response.ok) {
+              const errorData = await response.json().catch(() => ({ message: `HTTP status ${response.status}` }));
+              const detail = errorData?.message ? (typeof errorData.message === 'string' ? errorData.message : JSON.stringify(errorData.message)) : `Status: ${response.status}`;
+              console.error(`API error for validation ID ${request.idValidation}: ${detail}`);
+              continue;
+          }
+
+          const data = await response.json();
+          if (data.status === 'validation-success') {
+            updateRequestStatus(request.id, EstadoSolicitud.EXITOSO);
+          } else if (data.status === 'validation-failed') {
+            updateRequestStatus(request.id, EstadoSolicitud.NO_EXITOSO);
+          }
+        } catch (error) {
+          console.error(`Error processing status check for request ${request.id}:`, error);
+        }
+      }
+    };
+
+    const intervalId = setInterval(checkRequestStatuses, 20000); // Check every 20 seconds
+    return () => clearInterval(intervalId);
+  }, [requests, updateRequestStatus]);
+  
   useEffect(() => {
     const checkStatuses = async () => {
       const pendingContracts = contracts.filter(

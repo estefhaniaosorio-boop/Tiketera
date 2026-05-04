@@ -1,4 +1,5 @@
 
+
 import React, { useState, useContext, useRef } from 'react';
 import { AppContext } from '../App';
 import Modal from '../components/Modal';
@@ -14,6 +15,17 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Set the workerSrc to ensure pdf.js can find its worker script.
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.5.136/build/pdf.worker.mjs';
 
+const getClientIP = async (): Promise<string> => {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        if (!response.ok) return '192.168.1.1';
+        const data = await response.json();
+        return data.ip || '192.168.1.1';
+    } catch (error) {
+        console.error('Error getting client IP:', error);
+        return '192.168.1.1';
+    }
+};
 
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -33,6 +45,54 @@ const mapTipoDocumentoToApiCode = (tipo: TipoDocumento): string => {
     case TipoDocumento.CEDULA_EXTRANJERIA: return 'CE';
     default: return 'CC';
   }
+};
+
+const sendEmailNotification = async (payload: object) => {
+    const endpoint = 'https://segurobolivar-trial.app.n8n.cloud/webhook-test/c8b708cb-c698-4403-80cc-e41c8489ab41';
+    
+    // 1) Standard fetch
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (response.ok) {
+            console.log('Email notification sent via standard fetch.');
+            return;
+        }
+        console.warn('Standard fetch for email failed with status:', response.status);
+    } catch (error) {
+        console.warn('Standard fetch for email failed, falling back...', error);
+    }
+
+    // 2) navigator.sendBeacon
+    try {
+        if (navigator.sendBeacon) {
+            const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain' });
+            if (navigator.sendBeacon(endpoint, blob)) {
+                console.log('Email notification sent via sendBeacon.');
+                return;
+            }
+        }
+    } catch (error) {
+        console.warn('sendBeacon for email failed, falling back...', error);
+    }
+
+    // 3) fetch with no-cors (last resort)
+    try {
+        await fetch(endpoint, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'text/plain',
+            },
+            body: JSON.stringify(payload),
+        });
+        console.log('Email notification sent via no-cors fetch (fire and forget).');
+    } catch (error) {
+        console.error('All methods to send email notification failed.', error);
+    }
 };
 
 const EditSignerModal: React.FC<{
@@ -134,6 +194,7 @@ const ContractSigningPage: React.FC = () => {
     try {
       setProcessingText('Enviando enlaces de firma...');
       setIsProcessing(true);
+      const clientIP = await getClientIP();
 
       const signerPromises = signersToSend.map(async (signer) => {
         let sanitizedDoc: string;
@@ -143,10 +204,16 @@ const ContractSigningPage: React.FC = () => {
             sanitizedDoc = signer.doc.replace(/[^a-zA-Z0-9]/g, '');
         }
         
-        const response = await fetch(`https://2ncqe7ikzh.execute-api.us-east-1.amazonaws.com/stage/biometry/v1/start-validation`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': 'b5EW1Ilf215yPfRk86dzI3PM77x01AU49TppJ83R' },
-          body: JSON.stringify({ userData: { userId: sanitizedDoc, userType: mapTipoDocumentoToApiCode(signer.tipoDocumento) } }),
+        const params = new URLSearchParams({
+            d: sanitizedDoc,
+            tc: mapTipoDocumentoToApiCode(signer.tipoDocumento),
+            ip: clientIP,
+            cs: signer.phone,
+        });
+
+        const response = await fetch(`https://2ncqe7ikzh.execute-api.us-east-1.amazonaws.com/stage/biometry/v1/start-validation?${params.toString()}`, {
+            method: 'POST',
+            headers: { 'x-api-key': 'BLX4v9u8SZ5ypiyL9ZPpV8qWPAWppXP73qvXq61l' },
         });
 
         if (!response.ok) {
@@ -169,6 +236,20 @@ const ContractSigningPage: React.FC = () => {
           templateContent: content,
           signers: signersWithBiometryData,
       });
+      
+      if (appContext.user) {
+        newContract.signers.forEach(signer => {
+          if (!signer.biometriaUrl) return;
+          const emailPayload = {
+            email: signer.email,
+            link: signer.biometriaUrl,
+            id_solicitud: newContract.id,
+            nombre_inmobiliaria: appContext.user!.nombreInmobiliaria,
+            tipo_proceso: `Firma de Contrato: ${newContract.fileName}`
+          };
+          sendEmailNotification(emailPayload);
+        });
+      }
 
       setSubmittedSigners(newContract.signers);
       appContext.consumeTransactions(signersToSend.length);
