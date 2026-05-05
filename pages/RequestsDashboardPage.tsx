@@ -122,7 +122,7 @@ const RequestsDashboardPage: React.FC = () => {
         <div className="flex flex-wrap gap-2">
             <button
               onClick={handleDownloadReport}
-              className="flex items-center bg-danger-dark text-white font-semibold py-2 px-4 rounded-lg shadow-md"
+              className="flex items-center bg-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md"
               title="Descargar reporte de envíos filtrados"
             >
               <FaDownload className="w-4 h-4 mr-2" />
@@ -130,14 +130,14 @@ const RequestsDashboardPage: React.FC = () => {
             </button>
             <button
               onClick={() => navigate(ROUTES.SEND_REQUEST)}
-              className="flex items-center bg-danger-dark text-white font-semibold py-2 px-4 rounded-lg shadow-md"
+              className="flex items-center bg-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md"
             >
               <PlusIcon className="w-5 h-5 mr-2" />
               Nueva Solicitud
             </button>
              <button
               onClick={() => navigate(ROUTES.CONTRACT_SIGNING)}
-              className="flex items-center bg-danger-dark text-white font-semibold py-2 px-4 rounded-lg shadow-md"
+              className="flex items-center bg-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md"
             >
               <PencilSquareIcon className="w-5 h-5 mr-2" />
               Nuevo Contrato
@@ -198,7 +198,7 @@ const RequestsDashboardPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => navigate(item.navigateTo)}
-                        className="bg-danger-dark text-white p-1 rounded-full" 
+                        className="bg-primary text-white p-1 rounded-full" 
                         title="Ver Detalle"
                       >
                         <EyeIcon className="w-5 h-5" />
@@ -206,7 +206,7 @@ const RequestsDashboardPage: React.FC = () => {
                       {item.isResendable && (
                         <button
                             onClick={() => handleResendFromDashboard(item.id)}
-                            className="ml-2 bg-danger-dark text-white p-1 rounded-full"
+                            className="ml-2 bg-primary text-white p-1 rounded-full"
                             title="Reenviar Solicitud"
                         >
                             <RefreshIcon className="w-5 h-5" />

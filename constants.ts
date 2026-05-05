@@ -242,21 +242,21 @@ export const ROUTES = {
 // Representa una fila en la hoja de "Credenciales"
 
 
-// Datos de prueba para las credenciales, para evitar la llamada de red.
+// Credenciales de prueba — en producción se validan contra el servicio de autenticación corporativo.
+// Cada usuario tiene permisos específicos según su área.
 export const MOCK_CREDENTIALS: Credential[] = [
-  { inmobiliaria: "INMOBILIARIA BOGOTA S.A.", nit: "8600123", email: "contacto@inmobogota.com", poliza: "5001353", password_asignada: "pass123", estado: "Activo" },
-  { inmobiliaria: "ARRENDAMIENTOS ABC", nit: "9001234", email: "info@arriendosabc.co", poliza: "5001354", password_asignada: "pass123", estado: "Activo" },
-  { inmobiliaria: "METRO CUADRADO FINCA RAIZ", nit: "8005678", email: "servicio@m2.com", poliza: "5001355", password_asignada: "pass123", estado: "Activo" },
-  { inmobiliaria: "MI CASA PROPIA", nit: "8309876", email: "ventas@micasapropia.com.co", poliza: "5001356", password_asignada: "pass123", estado: "Activo" },
+  { inmobiliaria: "Indemnizaciones — Seguros Bolívar", nit: "1012345678", email: "indemnizaciones@segurosbolivar.com", poliza: "IND-001", password_asignada: "bolivar2026", estado: "Activo", permisos: ['validar_identidad'] },
+  { inmobiliaria: "Inmobiliaria Bogotá S.A.", nit: "8600123", email: "contacto@inmobogota.com", poliza: "INM-001", password_asignada: "bolivar2026", estado: "Activo", permisos: ['validar_identidad', 'firma_contrato'] },
+  { inmobiliaria: "Servicio El Libertador — Traslados", nit: "1098765432", email: "traslados@ellibertador.com", poliza: "LIB-001", password_asignada: "bolivar2026", estado: "Activo", permisos: ['validar_identidad'] },
+  { inmobiliaria: "Constructora Bolívar — Comercial", nit: "8600123456", email: "comercial@constructorabolivar.com", poliza: "CBL-001", password_asignada: "bolivar2026", estado: "Activo", permisos: ['validar_identidad', 'firma_contrato'] },
 ];
 
-// Datos simulados de la hoja "Cupo disponible" del Google Sheet.
-// En un entorno de producción, esto se obtendría a través de una API.
+// Cupo de transacciones por entidad — en producción viene del backend.
 export const MOCK_CUPO_DATA: CupoData[] = [
+  { nit: "1012345678", asignadas: 200, usadas: 30 },
   { nit: "8600123", asignadas: 100, usadas: 25 },
-  { nit: "9001234", asignadas: 50, usadas: 48 },
-  { nit: "8005678", asignadas: 200, usadas: 150 },
-  { nit: "8309876", asignadas: 75, usadas: 10 },
+  { nit: "1098765432", asignadas: 150, usadas: 20 },
+  { nit: "8600123456", asignadas: 100, usadas: 45 },
 ];
 
 

@@ -31,7 +31,7 @@ const ContractDetailPage: React.FC = () => {
         <h2 className="text-2xl font-semibold text-gray-700 mb-4">Contrato no encontrado</h2>
         <button
             onClick={() => navigate(ROUTES.REQUESTS_DASHBOARD)}
-            className="mt-6 inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-danger-dark"
+            className="mt-6 inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-primary"
         >
             <ArrowLeftIcon className="w-5 h-5 mr-2" />
             Volver al Dashboard de Envíos
@@ -165,7 +165,7 @@ const ContractDetailPage: React.FC = () => {
       <div className="pt-6 text-center">
           <button
             onClick={() => navigate(ROUTES.REQUESTS_DASHBOARD)}
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-danger-dark"
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-primary"
           >
             <ArrowLeftIcon className="w-5 h-5 mr-2" />
             Volver al Dashboard

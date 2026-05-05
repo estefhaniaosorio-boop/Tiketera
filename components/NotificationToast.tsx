@@ -39,7 +39,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
     >
       <CheckIcon className="w-6 h-6 mr-3" />
       <span>{message}</span>
-      <button onClick={onDismiss} className="ml-4 flex h-6 w-6 items-center justify-center rounded-full bg-danger-dark text-xl font-bold text-white">&times;</button>
+      <button onClick={onDismiss} className="ml-4 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xl font-bold text-white">&times;</button>
     </div>
   );
 };

@@ -56,7 +56,7 @@ const DashboardPage: React.FC = () => {
         <KPICard 
           title="Cupo Asignado" 
           value={kpiData.cupoAsignado} 
-          colorClass="bg-danger-dark"
+          colorClass="bg-warning-dark"
            description="El total de su paquete de transacciones."
         />
       </div>

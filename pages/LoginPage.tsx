@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../App';
 import { ROUTES } from '../constants';
 import { EyeIcon, EyeSlashIcon } from '../components/icons';
+import BolivarLogo from '../components/BolivarLogo';
 
 const LoginPage: React.FC = () => {
-  const [nit, setNit] = useState('');
+  const [identificacion, setIdentificacion] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -20,18 +21,18 @@ const LoginPage: React.FC = () => {
     setError('');
     setIsLoading(true);
 
-    if (!nit || !password) {
-      setError('NIT y contraseña son requeridos.');
+    if (!identificacion || !password) {
+      setError('Identificación y contraseña son requeridos.');
       setIsLoading(false);
       return;
     }
 
     if (appContext) {
-      const success = await appContext.login(nit, password);
+      const success = await appContext.login(identificacion, password);
       if (success) {
         navigate(ROUTES.DASHBOARD);
       } else {
-        setError('Tu nombre de usuario y/o contraseña son incorrectos');
+        setError('Identificación y/o contraseña incorrectos');
       }
     } else {
         setError('No se pudo acceder al contexto de la aplicación.');
@@ -45,14 +46,19 @@ const LoginPage: React.FC = () => {
 
   const inputBaseClasses = "mt-1 block w-full px-4 py-3 border rounded-lg shadow-sm placeholder-gray-400 sm:text-sm";
   const errorInputClasses = "border-danger-dark ring-1 ring-danger-dark";
-  const normalInputClasses = "border-gray-400";
+  const normalInputClasses = "border-gray-300 focus:ring-primary focus:border-primary";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-light via-primary-DEFAULT to-primary-dark p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-dark via-primary-DEFAULT to-primary-light p-4">
       <div className="bg-white p-8 md:p-12 rounded-xl shadow-2xl w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-brand-red">EL LIBERTADOR</h1>
-          <p className="text-gray-600 mt-2">Bienvenido. Ingrese a su cuenta.</p>
+          {/* Logo Seguros Bolívar */}
+          <div className="flex justify-center mb-4">
+            <BolivarLogo size={64} />
+          </div>
+          <h1 className="text-3xl font-bold text-primary">BoliVer</h1>
+          <p className="text-sm text-gray-500 mt-1">Verificación de Identidad y Firma</p>
+          <p className="text-gray-600 mt-3">Ingrese sus credenciales para continuar</p>
         </div>
         
         {appContext?.credentialError && (
@@ -63,18 +69,18 @@ const LoginPage: React.FC = () => {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label htmlFor="nit" className="block text-sm font-medium text-gray-700">
-              NIT
+            <label htmlFor="identificacion" className="block text-sm font-medium text-gray-700">
+              Identificación
             </label>
             <input
-              id="nit"
-              name="nit"
+              id="identificacion"
+              name="identificacion"
               type="text"
               autoComplete="username"
               required
-              value={nit}
-              onChange={(e) => setNit(e.target.value)}
-              placeholder="NIT (sin puntos, guión ni DV)"
+              value={identificacion}
+              onChange={(e) => setIdentificacion(e.target.value)}
+              placeholder="Número de identificación o NIT"
               className={`${inputBaseClasses} ${error ? errorInputClasses : normalInputClasses}`}
               disabled={appContext?.isAppLoading}
             />
@@ -119,9 +125,9 @@ const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading || appContext?.isAppLoading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-danger-dark disabled:opacity-50"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark transition-colors disabled:opacity-50"
             >
-              {appContext?.isAppLoading ? 'Cargando datos...' : (isLoading ? 'Verificando...' : 'Iniciar Sesión')}
+              {appContext?.isAppLoading ? 'Cargando...' : (isLoading ? 'Verificando...' : 'Iniciar Sesión')}
             </button>
           </div>
         </form>
@@ -129,10 +135,14 @@ const LoginPage: React.FC = () => {
         <div className="mt-6 text-center">
           <button
             onClick={() => navigate(ROUTES.FORGOT_PASSWORD)}
-            className="inline-block bg-danger-dark text-white font-semibold py-2 px-4 rounded-lg shadow-md text-sm"
+            className="text-sm text-primary hover:text-primary-dark font-medium underline"
           >
             ¿Olvidó su contraseña?
           </button>
+        </div>
+
+        <div className="mt-8 pt-4 border-t border-gray-200 text-center">
+          <p className="text-xs text-gray-400">Grupo Bolívar — Todos los derechos reservados</p>
         </div>
       </div>
     </div>

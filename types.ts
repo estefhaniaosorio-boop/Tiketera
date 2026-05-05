@@ -7,6 +7,7 @@ export interface Credential {
   poliza: string;
   password_asignada: string;
   estado: string;
+  permisos: ('validar_identidad' | 'firma_contrato')[];
 }
 
 export enum TipoDocumento {
@@ -41,6 +42,7 @@ export interface User {
   nombreInmobiliaria: string;
   cupoAsignado: number;
   cupoConsumido: number;
+  permisos: ('validar_identidad' | 'firma_contrato')[];
 }
 
 // NUEVOS TIPOS PARA CONTRATOS

@@ -18,7 +18,7 @@ import Sidebar from './components/Sidebar';
 
 export const AppContext = React.createContext<AppContextType | null>(null);
 
-const BIOMETRY_API_KEY = 'BLX4v9u8SZ5ypiyL9ZPpV8qWPAWppXP73qvXq61l';
+const BIOMETRY_API_KEY = import.meta.env.VITE_BIOMETRY_API_KEY || '';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const appContext = React.useContext(AppContext);
@@ -133,6 +133,7 @@ const App: React.FC = () => {
               nit: normalizeNit(cred.nit),
               cupoAsignado: cupo?.asignadas ?? 0,
               cupoConsumido: cupo?.usadas ?? 0,
+              permisos: cred.permisos || ['validar_identidad', 'firma_contrato'],
             };
           });
           

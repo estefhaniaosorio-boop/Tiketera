@@ -26,7 +26,7 @@ const RequestDetailPage: React.FC = () => {
         <p className="text-gray-500">No pudimos encontrar una solicitud con el ID: {requestId}</p>
         <button
             onClick={() => navigate(ROUTES.REQUESTS_DASHBOARD)}
-            className="mt-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-danger-dark"
+            className="mt-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary"
         >
             <ArrowLeftIcon className="w-5 h-5 mr-2" />
             Volver al Dashboard
@@ -105,7 +105,7 @@ const RequestDetailPage: React.FC = () => {
         <div className="pt-6 border-t border-gray-200 flex flex-col sm:flex-row gap-3 justify-end">
           <button
             onClick={() => navigate(ROUTES.REQUESTS_DASHBOARD)}
-            className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-danger-dark"
+            className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary"
           >
             <ArrowLeftIcon className="w-5 h-5 mr-2" />
             Volver al Dashboard
@@ -114,7 +114,7 @@ const RequestDetailPage: React.FC = () => {
           {request.estado === EstadoSolicitud.VENCIDO && (
             <button
               onClick={handleResendRequest}
-              className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-danger-dark"
+              className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary"
             >
               <RefreshIcon className="w-5 h-5 mr-2" />
               Reenviar Solicitud

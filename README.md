@@ -1,20 +1,45 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# BoliVer — Verificación de Identidad y Firma Biométrica
 
-# Run and deploy your AI Studio app
+Plataforma para generar links de validación de identidad y firma biométrica de contratos de arrendamiento.
 
-This contains everything you need to run your app locally.
+## Stack
 
-View your app in AI Studio: https://ai.studio/apps/23830de7-cb56-40af-94ab-dbe995140bfe
+- React 19 + TypeScript
+- Vite 6
+- Tailwind CSS
+- API de Biometría (Seguros Bolívar)
 
-## Run Locally
+## Ejecutar localmente
 
-**Prerequisites:**  Node.js
+**Requisitos:** Node.js 20+
 
+1. Instalar dependencias:
+   ```bash
+   npm install
+   ```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+2. Configurar variables de entorno:
+   ```bash
+   cp .env.example .env.local
+   ```
+   Llenar `VITE_BIOMETRY_API_KEY` con la API key de biometría.
+
+3. Ejecutar:
+   ```bash
+   npm run dev
+   ```
+
+## Variables de entorno
+
+| Variable | Descripción |
+|----------|-------------|
+| `VITE_BIOMETRY_API_KEY` | API key del servicio de biometría |
+| `GEMINI_API_KEY` | API key de Google Gemini (opcional, para IA) |
+
+## Funcionalidades
+
+- Login por NIT de inmobiliaria
+- Generación de links de validación de identidad
+- Firma biométrica de contratos (vivienda y comercial)
+- Dashboard de seguimiento de solicitudes y contratos
+- Control de cupo de transacciones

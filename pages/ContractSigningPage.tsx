@@ -11,6 +11,7 @@ import LoaderOverlay from '../components/LoaderOverlay';
 import { RENTAL_CONTRACT_TEMPLATE_COMERCIAL, RENTAL_CONTRACT_TEMPLATE_VIVIENDA } from '../constants';
 import mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
+import SignaturePad from '../components/SignaturePad';
 
 // Set the workerSrc to ensure pdf.js can find its worker script.
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.5.136/build/pdf.worker.mjs';
@@ -134,7 +135,7 @@ const EditSignerModal: React.FC<{
         </div>
         <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={onClose} className="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-md">Cancelar</button>
-            <button type="submit" className="bg-danger-dark text-white font-semibold py-2 px-4 rounded-lg shadow-md">Guardar Cambios</button>
+            <button type="submit" className="bg-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md">Guardar Cambios</button>
         </div>
       </form>
     </Modal>
@@ -154,6 +155,8 @@ const ContractSigningPage: React.FC = () => {
   const [processingText, setProcessingText] = useState<string>('');
   
   const [signers, setSigners] = useState<Signer[]>([]);
+  const [signerSignatures, setSignerSignatures] = useState<Record<string, string>>({});
+  const [signingSignerId, setSigningSignerId] = useState<string | null>(null);
   const [signerForm, setSignerForm] = useState({ name: '', tipoDocumento: TipoDocumento.CEDULA_CIUDADANIA, doc: '', email: '', phone: '', role: SignerRole.ARRENDATARIO });
   const [signerFormErrors, setSignerFormErrors] = useState<Partial<Record<keyof Omit<Signer, 'id'>, string>>>({});
   const [editingSigner, setEditingSigner] = useState<Signer | null>(null);
@@ -213,7 +216,7 @@ const ContractSigningPage: React.FC = () => {
 
         const response = await fetch(`https://2ncqe7ikzh.execute-api.us-east-1.amazonaws.com/stage/biometry/v1/start-validation?${params.toString()}`, {
             method: 'POST',
-            headers: { 'x-api-key': 'BLX4v9u8SZ5ypiyL9ZPpV8qWPAWppXP73qvXq61l' },
+            headers: { 'x-api-key': import.meta.env.VITE_BIOMETRY_API_KEY || '' },
         });
 
         if (!response.ok) {
@@ -442,6 +445,13 @@ const ContractSigningPage: React.FC = () => {
   const handleFinalSubmit = async () => {
     if (!contractSource) return;
 
+    // Verificar que todos los firmantes hayan firmado
+    const unsignedSigners = signers.filter(s => !signerSignatures[s.id]);
+    if (unsignedSigners.length > 0) {
+      setApiError(`Faltan firmas de: ${unsignedSigners.map(s => s.name).join(', ')}. Cada firmante debe firmar antes de enviar a verificación biométrica.`);
+      return;
+    }
+
     let success = false;
     if (contractSource.type === 'file') {
         success = await sendContractForSignature(signers, contractSource.file, '');
@@ -489,7 +499,7 @@ const ContractSigningPage: React.FC = () => {
                     <h3 className="font-semibold text-lg text-gray-800 mb-2">Adjuntar Contrato</h3>
                     <p className="text-sm text-gray-600 mb-4">Sube un archivo PDF o Word para iniciar el proceso.</p>
                     <input type="file" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                    <button type="button" className="bg-danger-dark text-white font-semibold py-2 px-4 rounded-lg shadow-md mt-auto pointer-events-none">
+                    <button type="button" className="bg-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md mt-auto pointer-events-none">
                         Seleccionar Archivo
                     </button>
                 </div>
@@ -500,7 +510,7 @@ const ContractSigningPage: React.FC = () => {
                     <FaMagic className="w-16 h-16 text-primary-DEFAULT mb-4"/>
                     <h3 className="font-semibold text-lg text-gray-800 mb-2">Utilizar Plantilla</h3>
                     <p className="text-sm text-gray-600 mb-4">Elige un modelo de contrato y añade los firmantes manualmente.</p>
-                    <button type="button" className="bg-danger-dark text-white font-semibold py-2 px-4 rounded-lg shadow-md mt-auto pointer-events-none">
+                    <button type="button" className="bg-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md mt-auto pointer-events-none">
                         Elegir Plantilla
                     </button>
                 </div>
@@ -541,17 +551,41 @@ const ContractSigningPage: React.FC = () => {
                     {apiError && <p className="mb-4 text-sm text-center text-danger-dark bg-danger-light p-3 rounded-md">{apiError}</p>}
                     
                     {signers.length > 0 && (
-                        <ul className="space-y-3 mb-4">
+                        <ul className="space-y-4 mb-4">
                             {signers.map(signer => (
-                                <li key={signer.id} className="p-3 border rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-50 gap-3">
-                                    <div>
-                                        <p className="font-medium text-gray-800">{signer.name} <span className="text-xs font-semibold text-white bg-primary-DEFAULT px-2 py-0.5 rounded-full ml-2">{signer.role}</span></p>
-                                        <p className="text-sm text-gray-500">{signer.email} / {signer.phone}</p>
-                                        <p className="text-sm text-gray-500">{signer.tipoDocumento} - {signer.doc}</p>
+                                <li key={signer.id} className="border rounded-lg bg-gray-50 overflow-hidden">
+                                    <div className="p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                        <div className="flex-1">
+                                            <p className="font-medium text-gray-800">{signer.name} <span className="text-xs font-semibold text-white bg-primary-DEFAULT px-2 py-0.5 rounded-full ml-2">{signer.role}</span></p>
+                                            <p className="text-sm text-gray-500">{signer.email} / {signer.phone}</p>
+                                            <p className="text-sm text-gray-500">{signer.tipoDocumento} - {signer.doc}</p>
+                                        </div>
+                                        <div className="flex gap-2 self-end sm:self-center flex-shrink-0">
+                                            <button onClick={() => setEditingSigner(signer)} className="bg-gray-200 text-gray-700 p-2 rounded-full hover:bg-gray-300" title="Editar Firmante"><PencilSquareIcon className="w-5 h-5"/></button>
+                                            <button onClick={() => handleRemoveSigner(signer.id)} className="bg-danger-light text-danger-dark p-2 rounded-full hover:bg-danger-DEFAULT hover:text-white" title="Eliminar Firmante"><FaTrash className="w-5 h-5" /></button>
+                                        </div>
                                     </div>
-                                    <div className="flex gap-2 self-end sm:self-center flex-shrink-0">
-                                        <button onClick={() => setEditingSigner(signer)} className="bg-gray-200 text-gray-700 p-2 rounded-full hover:bg-gray-300" title="Editar Firmante"><PencilSquareIcon className="w-5 h-5"/></button>
-                                        <button onClick={() => handleRemoveSigner(signer.id)} className="bg-danger-light text-danger-dark p-2 rounded-full hover:bg-danger-DEFAULT hover:text-white" title="Eliminar Firmante"><FaTrash className="w-5 h-5" /></button>
+                                    {/* Sección de firma inline para cada firmante */}
+                                    <div className="border-t border-gray-200 p-3 bg-white">
+                                      {signerSignatures[signer.id] ? (
+                                        <div className="flex items-center gap-3">
+                                          <span className="text-sm text-green-700 bg-green-100 px-3 py-1 rounded-full font-medium">✓ Firmado</span>
+                                          <img src={signerSignatures[signer.id]} alt="Firma" className="h-10 border rounded" />
+                                          <button
+                                            onClick={() => setSignerSignatures(prev => { const copy = {...prev}; delete copy[signer.id]; return copy; })}
+                                            className="text-xs text-gray-500 hover:text-primary underline ml-auto"
+                                          >
+                                            Cambiar firma
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => setSigningSignerId(signer.id)}
+                                          className="w-full flex items-center justify-center gap-2 py-3 px-4 border-2 border-dashed border-warning-DEFAULT rounded-lg text-warning-dark hover:bg-yellow-50 transition-colors font-medium text-sm"
+                                        >
+                                          ✏️ Firmar aquí — {signer.name}
+                                        </button>
+                                      )}
                                     </div>
                                 </li>
                             ))}
@@ -573,7 +607,7 @@ const ContractSigningPage: React.FC = () => {
                               {signerFormErrors.phone && <p className="text-xs text-red-600 -mt-2">{signerFormErrors.phone}</p>}
                               <input placeholder="Email" type="email" value={signerForm.email} onChange={e => setSignerForm({ ...signerForm, email: e.target.value})} className="block w-full px-3 py-2 border border-gray-400 rounded-md" />
                               {signerFormErrors.email && <p className="text-xs text-red-600 -mt-2">{signerFormErrors.email}</p>}
-                              <button type="submit" className="inline-flex items-center justify-center bg-danger-dark text-white font-semibold py-2 px-4 rounded-lg shadow-md">
+                              <button type="submit" className="inline-flex items-center justify-center bg-primary text-white font-semibold py-2 px-4 rounded-lg shadow-md">
                                   <FaUserPlus className="mr-2"/> Añadir Firmante
                               </button>
                           </form>
@@ -593,7 +627,7 @@ const ContractSigningPage: React.FC = () => {
 
                 <div className="bg-white p-6 rounded-xl shadow-lg">
                     <p className="text-sm text-gray-600 mb-4">Se consumirá <span className="font-bold text-lg">{signers.length}</span> transacción(es) de su saldo disponible. Saldo actual: <span className="font-bold text-lg">{availableTransactions}</span>.</p>
-                    <button onClick={handleFinalSubmit} disabled={isProcessing || signers.length === 0 || availableTransactions < signers.length} className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-danger-dark disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button onClick={handleFinalSubmit} disabled={isProcessing || signers.length === 0 || availableTransactions < signers.length} className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed">
                         {isProcessing ? 'Enviando...' : `Enviar a Firma (${signers.length})`}
                     </button>
                 </div>
@@ -640,7 +674,7 @@ const ContractSigningPage: React.FC = () => {
               ))}
           </ul>
           <p className="text-xs text-gray-500 mb-6">(Los enlaces se muestran aquí con fines de demostración).</p>
-          <button onClick={() => setIsSuccessModalOpen(false)} className="w-full bg-danger-dark text-white px-4 py-2 rounded-lg">Entendido</button>
+          <button onClick={() => setIsSuccessModalOpen(false)} className="w-full bg-primary text-white px-4 py-2 rounded-lg">Entendido</button>
       </Modal>
 
       <Modal isOpen={isNoTransactionsModalOpen} onClose={() => setIsNoTransactionsModalOpen(false)} title="Transacciones Insuficientes" icon={<WarningIcon className="w-12 h-12 text-danger-DEFAULT" />} iconBgColor="bg-danger-light">
@@ -650,10 +684,26 @@ const ContractSigningPage: React.FC = () => {
               <p>Transacciones disponibles: <span className="font-bold">{availableTransactions}</span></p>
           </div>
           <p className="text-sm text-gray-600 mb-4">Por favor, contacte a su ejecutivo comercial para adquirir más transacciones.</p>
-          <button onClick={() => setIsNoTransactionsModalOpen(false)} className="w-full bg-danger-dark text-white px-4 py-2 rounded-lg">Entendido</button>
+          <button onClick={() => setIsNoTransactionsModalOpen(false)} className="w-full bg-primary text-white px-4 py-2 rounded-lg">Entendido</button>
       </Modal>
       
       {editingSigner && <EditSignerModal signer={editingSigner} onClose={() => setEditingSigner(null)} onSave={handleUpdateSigner} />}
+
+      {/* Modal de firma (dibujar o adjuntar) */}
+      {signingSignerId && (() => {
+        const signer = signers.find(s => s.id === signingSignerId);
+        if (!signer) return null;
+        return (
+          <SignaturePad
+            signerName={signer.name}
+            onCancel={() => setSigningSignerId(null)}
+            onSignatureComplete={(dataUrl) => {
+              setSignerSignatures(prev => ({ ...prev, [signer.id]: dataUrl }));
+              setSigningSignerId(null);
+            }}
+          />
+        );
+      })()}
 
     </div>
   );

@@ -144,7 +144,7 @@ const SendRequestPage: React.FC = () => {
       const response = await fetch(`https://2ncqe7ikzh.execute-api.us-east-1.amazonaws.com/stage/biometry/v1/start-validation?${params.toString()}`,  {
           method: 'POST',
           headers: {
-              'x-api-key': 'BLX4v9u8SZ5ypiyL9ZPpV8qWPAWppXP73qvXq61l',
+              'x-api-key': import.meta.env.VITE_BIOMETRY_API_KEY || '',
           }, 
       });
       
@@ -258,14 +258,14 @@ const SendRequestPage: React.FC = () => {
             <button
               type="button"
               onClick={() => appContext.setTransactionsForTesting('reset_consumed')}
-              className="flex-1 text-xs bg-danger-dark text-white px-3 py-2 rounded-md font-medium"
+              className="flex-1 text-xs bg-primary text-white px-3 py-2 rounded-md font-medium"
             >
               Resetear Cupo Consumido
             </button>
             <button
               type="button"
               onClick={() => appContext.setTransactionsForTesting('add_10_assigned')}
-              className="flex-1 text-xs bg-danger-dark text-white px-3 py-2 rounded-md font-medium"
+              className="flex-1 text-xs bg-primary text-white px-3 py-2 rounded-md font-medium"
             >
               Añadir 10 al Cupo Asignado
             </button>
@@ -306,7 +306,7 @@ const SendRequestPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-danger-dark disabled:opacity-50"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary disabled:opacity-50"
           >
             {isLoading ? 'Enviando...' : 'Enviar Solicitud'}
           </button>
@@ -351,7 +351,7 @@ const SendRequestPage: React.FC = () => {
             setIsSuccessModalOpen(false);
             navigate(ROUTES.DASHBOARD);
           }}
-          className="w-full bg-danger-dark text-white px-4 py-2 rounded-lg"
+          className="w-full bg-primary text-white px-4 py-2 rounded-lg"
         >
           Volver al menú principal
         </button>
@@ -372,7 +372,7 @@ const SendRequestPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-3">
              <button
               onClick={() => setIsNoTransactionsModalOpen(false)}
-              className="w-full bg-danger-dark text-white px-4 py-2 rounded-lg"
+              className="w-full bg-primary text-white px-4 py-2 rounded-lg"
             >
               Entendido
             </button>

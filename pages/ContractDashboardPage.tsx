@@ -126,7 +126,7 @@ const ContractDashboardPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => navigate(ROUTES.CONTRACT_DETAIL.replace(':contractId', contract.id))}
-                        className="bg-danger-dark text-white p-1 rounded-full" 
+                        className="bg-primary text-white p-1 rounded-full" 
                         title="Ver Detalle del Contrato"
                       >
                         <EyeIcon className="w-5 h-5" />
